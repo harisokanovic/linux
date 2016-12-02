@@ -1374,6 +1374,49 @@ static void expire_timers(struct timer_base *base, struct hlist_head *head)
 	}
 }
 
+/* Called in interrupt context to quickly check if one or
+ * more timers are expired in base
+ */
+static bool has_expired_timers(struct timer_base *base)
+{
+	bool res = false;
+	unsigned long clk, end_clk, idx;
+	int i;
+
+	raw_spin_lock(&base->lock);
+
+	end_clk = jiffies;
+	if (unlikely(time_after(end_clk, base->clk + HZ))) {
+		/* Don't spend too much time in interrupt context. If we didn't
+		 * service timers in the last second, defer to ktimersoftd.
+		 */
+		res = true;
+		goto end;
+	}
+
+	for ( ; base->clk <= end_clk; base->clk++) {
+		clk = base->clk;
+		for (i = 0; i < LVL_DEPTH; i++) {
+			idx = (clk & LVL_MASK) + i * LVL_SIZE;
+
+			if (test_bit(idx, base->pending_map)) {
+				res = true;
+				goto end;
+			}
+
+			/* Is it time to look at the next level? */
+			if (clk & LVL_CLK_MASK)
+				break;
+			/* Shift clock for the next level granularity */
+			clk >>= LVL_CLK_SHIFT;
+		}
+	}
+
+	end:
+	raw_spin_unlock(&base->lock);
+	return res;
+}
+
 static int __collect_expired_timers(struct timer_base *base,
 				    struct hlist_head *heads)
 {
@@ -1686,12 +1729,12 @@ void run_local_timers(void)
 
 	hrtimer_run_queues();
 	/* Raise the softirq only if required. */
-	if (time_before(jiffies, base->clk)) {
+	if (time_before(jiffies, base->clk) || !has_expired_timers(base)) {
 		if (!IS_ENABLED(CONFIG_NO_HZ_COMMON) || !base->nohz_active)
 			return;
 		/* CPU is awake, so check the deferrable base. */
 		base++;
-		if (time_before(jiffies, base->clk))
+		if (time_before(jiffies, base->clk) || !has_expired_timers(base))
 			return;
 	}
 	raise_softirq(TIMER_SOFTIRQ);
