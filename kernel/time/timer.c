@@ -208,6 +208,7 @@ struct timer_base {
 	bool			migration_enabled;
 	bool			nohz_active;
 	bool			is_idle;
+	bool			block_softirq;
 	DECLARE_BITMAP(pending_map, WHEEL_SIZE);
 	struct hlist_head	vectors[WHEEL_SIZE];
 	struct hlist_head	expired_lists[LVL_DEPTH];
@@ -1376,9 +1377,11 @@ static int __collect_expired_timers(struct timer_base *base)
 
 	/*
 	 * expire_timers() must be called at least once before we can
-	 * collect more timers.
+	 * collect more timers. We should never hit this case unless
+	 * TIMER_SOFTIRQ got raised without expired timers.
 	 */
-	if (base->expired_levels)
+	if (WARN_ONCE(base->expired_levels,
+			"Must expire collected timers before collecting more"))
 		return base->expired_levels;
 
 	clk = base->clk;
@@ -1702,6 +1705,9 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
 	__run_timers(base);
 	if (IS_ENABLED(CONFIG_NO_HZ_COMMON) && base->nohz_active)
 		__run_timers(this_cpu_ptr(&timer_bases[BASE_DEF]));
+
+	/* Allow new TIMER_SOFTIRQs to get scheduled by run_local_timers() */
+	base->block_softirq = false;
 }
 
 /*
@@ -1712,6 +1718,14 @@ void run_local_timers(void)
 	struct timer_base *base = this_cpu_ptr(&timer_bases[BASE_STD]);
 
 	hrtimer_run_queues();
+
+	/*
+	 * Skip if TIMER_SOFTIRQ is already running on this CPU, since it
+	 * will find and expire all timers up to current jiffies.
+	 */
+	if (base->block_softirq)
+		return;
+
 	/* Raise the softirq only if required. */
 	if (time_before(jiffies, base->clk) || !tick_find_expired(base)) {
 		if (!IS_ENABLED(CONFIG_NO_HZ_COMMON) || !base->nohz_active)
@@ -1720,7 +1734,10 @@ void run_local_timers(void)
 		base++;
 		if (time_before(jiffies, base->clk) || !tick_find_expired(base))
 			return;
+		base--;
 	}
+
+	base->block_softirq = true;
 	raise_softirq(TIMER_SOFTIRQ);
 }
 
