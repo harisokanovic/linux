@@ -1,0 +1,4 @@
+config TIMER_TEST
+	tristate "Timer test module"
+	default m
+
