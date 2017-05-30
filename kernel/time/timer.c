@@ -1390,11 +1390,17 @@ static inline void __expire_timers(struct timer_base *base,
 static void expire_timers(struct timer_base *base)
 {
 	struct hlist_head *head;
+	int count = READ_ONCE(base->expired_count);
 
-	while (base->expired_count--) {
-		head = base->expired_lists + base->expired_count;
+	while (count--) {
+		head = base->expired_lists + count;
 		__expire_timers(base, head);
 	}
+
+	/* Zero base->expired_count after processing all base->expired_lists
+	 * to signal it's ready to get re-populated. Otherwise, we race with
+	 * tick_find_expired() when base->lock is temporarily dropped in
+	 * __expire_timers() */
 	base->expired_count = 0;
 }
 
@@ -1732,19 +1738,25 @@ static __latent_entropy void run_timer_softirq(struct softirq_action *h)
  */
 void run_local_timers(void)
 {
-	struct timer_base *base = this_cpu_ptr(&timer_bases[BASE_STD]);
+	struct timer_base *base;
 
 	hrtimer_run_queues();
-	/* Raise the softirq only if required. */
-	if (time_before(jiffies, base->clk) || !tick_find_expired(base)) {
-		if (!IS_ENABLED(CONFIG_NO_HZ_COMMON) || !base->nohz_active)
-			return;
-		/* CPU is awake, so check the deferrable base. */
-		base++;
-		if (time_before(jiffies, base->clk) || !tick_find_expired(base))
-			return;
+
+	/* Skip if softirq is already pending */
+	if(!(local_softirq_pending() & TIMER_SOFTIRQ)) {
+		base = this_cpu_ptr(&timer_bases[BASE_STD]);
+
+		/* Raise the softirq only if required. */
+		if (time_before(jiffies, base->clk) || !tick_find_expired(base)) {
+			if (!IS_ENABLED(CONFIG_NO_HZ_COMMON) || !base->nohz_active)
+				return;
+			/* CPU is awake, so check the deferrable base. */
+			base++;
+			if (time_before(jiffies, base->clk) || !tick_find_expired(base))
+				return;
+		}
+		raise_softirq(TIMER_SOFTIRQ);
 	}
-	raise_softirq(TIMER_SOFTIRQ);
 }
 
 #ifdef __ARCH_WANT_SYS_ALARM
