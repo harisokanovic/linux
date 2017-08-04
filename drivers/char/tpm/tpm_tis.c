@@ -89,6 +89,19 @@ static inline int is_itpm(struct acpi_device *dev)
 }
 #endif
 
+#ifdef CONFIG_PREEMPT_RT_FULL
+/*
+ * Flushes previous iowrite*() operations to chip so that a subsequent
+ * ioread*() won't stall a cpu.
+ */
+static void tpm_tcg_flush(struct tpm_tis_tcg_phy *phy)
+{
+	ioread8(phy->iobase + TPM_ACCESS(0));
+}
+#else
+#define tpm_tcg_flush do { } while(0)
+#endif
+
 static int tpm_tcg_read_bytes(struct tpm_tis_data *data, u32 addr, u16 len,
 			      u8 *result)
 {
@@ -104,8 +117,10 @@ static int tpm_tcg_write_bytes(struct tpm_tis_data *data, u32 addr, u16 len,
 {
 	struct tpm_tis_tcg_phy *phy = to_tpm_tis_tcg_phy(data);
 
-	while (len--)
+	while (len--) {
 		iowrite8(*value++, phy->iobase + addr);
+		tpm_tcg_flush(phy);
+	}
 	return 0;
 }
 
@@ -130,6 +145,7 @@ static int tpm_tcg_write32(struct tpm_tis_data *data, u32 addr, u32 value)
 	struct tpm_tis_tcg_phy *phy = to_tpm_tis_tcg_phy(data);
 
 	iowrite32(value, phy->iobase + addr);
+	tpm_tcg_flush(phy);
 	return 0;
 }
 
