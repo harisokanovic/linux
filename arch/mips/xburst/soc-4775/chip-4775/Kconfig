@@ -3,7 +3,7 @@
 choice
 	prompt "Board type"
 	depends on SOC_4775
-	default BOARD_4775_TEST
+	default BOARD_4775_ORION
 
 config BOARD_4775_ORION
         bool "ORION"
