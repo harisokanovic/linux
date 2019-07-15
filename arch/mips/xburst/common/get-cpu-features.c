@@ -14,12 +14,9 @@
 
 static int cpu_proc_show(struct seq_file *m, void *v)
 {
-	int len = 0;
+#define PRT0(X,Y) seq_printf(m, "#define " "%s()\t(%d * 1024)\n",#X,(Y)/1024)
+#define PRT1(X,Y) seq_printf(m, "#define " "%s()\t%d\n",#X,(Y))
 
-#define PRINT(ARGS...) len += seq_printf (m, ##ARGS)
-
-#define PRT0(X,Y) PRINT("#define " "%s()\t(%d * 1024)\n",#X,(Y)/1024)
-#define PRT1(X,Y) PRINT("#define " "%s()\t%d\n",#X,(Y))
 	PRT0(cpu_dcache_size,(1<<current_cpu_data.dcache.waybit)*current_cpu_data.dcache.ways);
 	PRT1(cpu_dcache_ways,current_cpu_data.dcache.ways);
 	PRT1(cpu_dcache_line_size,current_cpu_data.dcache.linesz);
@@ -28,7 +25,8 @@ static int cpu_proc_show(struct seq_file *m, void *v)
 	PRT1(cpu_icache_ways,current_cpu_data.icache.ways);
 	PRT1(cpu_icache_line_size,current_cpu_data.icache.linesz);
 
-#define PRT2(X) PRINT("#define " "%-30s\t%d\n",#X,X? 1: 0)
+#define PRT2(X) seq_printf(m, "#define " "%-30s\t%d\n",#X,X? 1: 0)
+
 	PRT2(cpu_has_tlb);
 	PRT2(cpu_has_4kex);
 	PRT2(cpu_has_3k_cache);
@@ -69,15 +67,15 @@ static int cpu_proc_show(struct seq_file *m, void *v)
 	PRT2(cpu_has_veic);
 	PRT2(cpu_has_inclusive_pcaches);
 
-	PRINT("\n");
-	PRINT("cp0 prid:\t%08x\n",read_c0_prid());
-	PRINT("cp0 config0:\t%08x\n",read_c0_config());
-	PRINT("cp0 config1:\t%08x\n",read_c0_config1());
-	PRINT("cp0 config2:\t%08x\n",read_c0_config2());
-	PRINT("cp0 config3:\t%08x\n",read_c0_config3());
-	PRINT("cp0 config4:\t%08x\n",read_c0_config4());
+	seq_printf(m, "\n");
+	seq_printf(m, "cp0 prid:\t%08x\n",read_c0_prid());
+	seq_printf(m, "cp0 config0:\t%08x\n",read_c0_config());
+	seq_printf(m, "cp0 config1:\t%08x\n",read_c0_config1());
+	seq_printf(m, "cp0 config2:\t%08x\n",read_c0_config2());
+	seq_printf(m, "cp0 config3:\t%08x\n",read_c0_config3());
+	seq_printf(m, "cp0 config4:\t%08x\n",read_c0_config4());
 
-	return len;
+	return 0;
 }
 
 static int cpu_open(struct inode *inode, struct file *file)

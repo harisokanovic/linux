@@ -13,6 +13,7 @@
 #include <linux/smp.h>
 #include <linux/stddef.h>
 #include <linux/export.h>
+#include <linux/kallsyms.h>
 
 #include <asm/bugs.h>
 #include <asm/cpu.h>
@@ -1953,30 +1954,47 @@ static inline void cpu_probe_loongson(struct cpuinfo_mips *c, unsigned int cpu)
 	}
 }
 
+extern int soc_support_mxuv2(void);
+
+/* XXX Rewrote to assume xburst */
 static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 {
+	unsigned int errorpc;
+	static unsigned int showerrorpc[NR_CPUS];
+	unsigned int config1;
+
+	if(showerrorpc[cpu] == 0) {
+		__asm__ __volatile__ (
+			"mfc0  %0, $30,  0   \n\t"
+			"nop                  \n\t"
+			:"=r"(errorpc)
+			:);
+
+		printk("CPU%d RESET ERROR PC:%08X\n", cpu,errorpc);
+		if(kernel_text_address(errorpc))
+			print_ip_sym(errorpc);
+		showerrorpc[cpu] = 1;
+	}
 	decode_configs(c);
 	/* JZRISC does not implement the CP0 counter. */
 	c->options &= ~MIPS_CPU_COUNTER;
-	BUG_ON(!__builtin_constant_p(cpu_has_counter) || cpu_has_counter);
-	switch (c->processor_id & PRID_IMP_MASK) {
-	case PRID_IMP_JZRISC:
-		c->cputype = CPU_JZRISC;
-		c->writecombine = _CACHE_UNCACHED_ACCELERATED;
-		__cpu_name[cpu] = "Ingenic JZRISC";
-		break;
-	default:
-		panic("Unknown Ingenic Processor ID!");
-		break;
-	}
 
-	/*
-	 * The config0 register in the Xburst CPUs with a processor ID of
-	 * PRID_COMP_INGENIC_D0 report themselves as MIPS32r2 compatible,
-	 * but they don't actually support this ISA.
-	 */
-	if ((c->processor_id & PRID_COMP_MASK) == PRID_COMP_INGENIC_D0)
-		c->isa_level &= ~MIPS_CPU_ISA_M32R2;
+	c->cputype = CPU_JZRISC;
+	__cpu_name[cpu] = "Ingenic Xburst";
+	c->isa_level = MIPS_CPU_ISA_M32R1;
+	c->tlbsize = 32;
+
+	config1 = read_c0_config1();
+	/* Xburst CU2 is MXUV2 */
+	if ((config1 & MIPS_CONF1_C2) && soc_support_mxuv2())
+		c->ases |= MIPS_ASE_XBURSTMXUV2;
+	else
+		c->ases |= MIPS_ASE_XBURSTMXU;
+
+	__write_32bit_c0_register($16, 7, 0x10);
+	if((c->processor_id & PRID_CPU_ISA_MASK) == PRID_IMP_ISA_R2) {
+		c->isa_level = MIPS_CPU_ISA_M32R2;
+	}
 }
 
 static inline void cpu_probe_netlogic(struct cpuinfo_mips *c, int cpu)

@@ -178,10 +178,19 @@
 #define PRID_IMP_CAVIUM_CNF75XX 0x9800
 
 /*
- * These are the PRID's for when 23:16 == PRID_COMP_INGENIC_*
+ * These are the PRID's for when 23:16 == PRID_COMP_INGENIC
+ * cpu_h(12bit CPU_FEATURE),chips(8bit),cpu_l(12bit CPU_ISA_ID)
  */
+#define PRID_CPU_FEATURE_MASK       0xFFF00000
+#define PRID_CPU_CHIPS_MASK         0x000FF000
+#define PRID_CPU_ISA_MASK           0x00000FFF
 
-#define PRID_IMP_JZRISC	       0x0200
+/* XXX old    PRID_IMP_JZRISC  0x0200  overridden */
+#define PRID_IMP_JZRISC             0x00010000
+#define PRID_IMP_JZ4775             0x2ed00000
+#define PRID_IMP_JZ4780             0x3ee00000
+#define PRID_IMP_M200               0x7ae00000
+#define PRID_IMP_ISA_R2             0x0000024f
 
 /*
  * These are the PRID's for when 23:16 == PRID_COMP_NETLOGIC
@@ -438,5 +447,7 @@ enum cpu_type_enum {
 #define MIPS_ASE_MSA		0x00000100 /* MIPS SIMD Architecture */
 #define MIPS_ASE_DSP3		0x00000200 /* Signal Processing ASE Rev 3*/
 #define MIPS_ASE_MIPS16E2	0x00000400 /* MIPS16e2 */
+#define MIPS_ASE_XBURSTMXU	0x80000000 /* MIPS Xburst eXtended enhanced Unit */
+#define MIPS_ASE_XBURSTMXUV2	0x40000000 /* MIPS Xburst eXtended enhanced Unit V2 */
 
 #endif /* _ASM_CPU_H */

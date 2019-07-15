@@ -40,6 +40,16 @@ extern void nlm_cop2_restore(struct nlm_cop2_state *);
 #define cop2_save(r)		do { (void)(r); } while (0)
 #define cop2_restore(r)		do { (void)(r); } while (0)
 
+#elif defined(CONFIG_MACH_XBURST)
+
+extern void xburst_cop2_save(struct xburst_cop2_state *);
+extern void xburst_cop2_restore(struct xburst_cop2_state *);
+#define cop2_save(r)		xburst_cop2_save(r)
+#define cop2_restore(r)		xburst_cop2_restore(r)
+
+#define cop2_present		1
+#define cop2_lazy_restore	0
+
 #else
 
 #define cop2_present		0

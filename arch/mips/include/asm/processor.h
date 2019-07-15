@@ -89,6 +89,7 @@ extern unsigned long mips_stack_top(void);
 
 
 #define NUM_FPU_REGS	32
+#define NUM_MXU_REGS	16
 
 #ifdef CONFIG_CPU_HAS_MSA
 # define FPU_REG_WIDTH	128
@@ -99,6 +100,10 @@ extern unsigned long mips_stack_top(void);
 union fpureg {
 	__u32	val32[FPU_REG_WIDTH / 32];
 	__u64	val64[FPU_REG_WIDTH / 64];
+};
+
+struct xburst_mxu_struct {
+	unsigned int regs[NUM_MXU_REGS];
 };
 
 #ifdef CONFIG_CPU_LITTLE_ENDIAN
@@ -207,8 +212,9 @@ struct octeon_cop2_state {
 	/* DMFC2 rt, 0x24F, DMFC2 rt, 0x50, OCTEON III */
 	unsigned long	cop2_sha3[2];
 };
-#define COP2_INIT						\
-	.cp2			= {0,},
+
+/* XXX */
+#define INIT_OCTEON_COP2 {0,}
 
 struct octeon_cvmseg_state {
 	unsigned long cvmseg[CONFIG_CAVIUM_OCTEON_CVMSEG_SIZE]
@@ -225,8 +231,24 @@ struct nlm_cop2_state {
 
 #define COP2_INIT						\
 	.cp2			= {{0}, {0}, 0, 0},
-#else
-#define COP2_INIT
+#endif
+
+#ifdef CONFIG_MACH_XBURST
+typedef union {
+	u64 val64[2];
+} vpr_t;
+
+struct xburst_cop2_state {
+	u32 mxu_csr;
+	vpr_t vr[32];
+};
+#endif
+
+#ifdef CONFIG_PMON_DEBUG
+struct xburst_perf_cnt {
+	u32 perfctrl;
+	u64 perfcnt;
+};
 #endif
 
 typedef struct {
@@ -275,6 +297,9 @@ struct thread_struct {
 	/* Saved state of the DSP ASE, if available. */
 	struct mips_dsp_state dsp;
 
+	/* Saved registers of the MXU, if available. */
+	struct xburst_mxu_struct mxu;
+
 	/* Saved watch register state, if available. */
 	union mips_watch_reg_state watch;
 
@@ -290,6 +315,12 @@ struct thread_struct {
 #ifdef CONFIG_CPU_XLP
 	struct nlm_cop2_state cp2;
 #endif
+#ifdef CONFIG_MACH_XBURST
+	struct xburst_cop2_state cp2;
+#endif
+#ifdef CONFIG_PMON_DEBUG
+	struct xburst_perf_cnt pfc[2];
+#endif
 	struct mips_abi *abi;
 };
 
@@ -300,6 +331,23 @@ struct thread_struct {
 #else
 #define FPAFF_INIT
 #endif /* CONFIG_MIPS_MT_FPAFF */
+
+#ifdef CONFIG_CPU_CAVIUM_OCTEON
+#define COP2_INIT						\
+	.cp2			= INIT_OCTEON_COP2,
+#elif defined(CONFIG_MACH_XBURST)
+#define COP2_INIT						\
+	.cp2			= {0},
+#else
+#define COP2_INIT
+#endif /* CONFIG_CPU_CAVIUM_OCTEON */
+
+#ifdef CONFIG_PMON_DEBUG
+#define PFC_INIT						\
+	.pfc			= {{0, 0}, {0, 0}},
+#else
+#define PFC_INIT
+#endif /* CONFIG_PMON_DEBUG */
 
 #ifdef CONFIG_MIPS_FP_SUPPORT
 # define FPU_INIT						\
@@ -365,6 +413,7 @@ struct thread_struct {
 	 * Platform specific cop2 registers(null if no COP2)	\
 	 */							\
 	COP2_INIT						\
+	PFC_INIT						\
 }
 
 struct task_struct;

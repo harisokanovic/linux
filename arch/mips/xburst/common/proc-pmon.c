@@ -1,5 +1,7 @@
+#include <linux/module.h>
 #include <linux/proc_fs.h>
 #include <asm/mipsregs.h>
+#include <linux/uaccess.h>
 #include <asm/uaccess.h>
 #include <linux/seq_file.h>
 #define get_pmon_csr()		__read_32bit_c0_register($16, 7)
