@@ -53,6 +53,16 @@
 #define __exitdata	__section(.exit.data)
 #define __exit_call	__used __section(.exitcall.exit)
 
+/* TODO may be able to prune this */
+/* s/.cpuinit/.init/  Can we still use cpuinit section? */
+/* s/.cpuexit/.exit/  */
+#define __cpuinit        __section(.init.text) __cold notrace  __latent_entropy __noinitretpoline
+//#define __cpuinitdata    __section(.init.data)
+//#define __cpuinitconst   __constsection(.init.rodata)
+//#define __cpuexit        __section(.exit.text) __exitused __cold notrace
+//#define __cpuexitdata    __section(.exit.data)
+//#define __cpuexitconst   __constsection(.exit.rodata)
+
 /*
  * modpost check for section mismatches during the kernel build.
  * A section mismatch happens when there are references from a

@@ -51,6 +51,7 @@
 #define Fill				(Cache_I | 0x14)
 #define Hit_Writeback_I			(Cache_I | Hit_Writeback)
 #define Hit_Writeback_D			(Cache_D | Hit_Writeback)
+#define Index_Prefetch_I	0x1c
 
 /*
  * R4000SC and R4400SC-specific cacheops

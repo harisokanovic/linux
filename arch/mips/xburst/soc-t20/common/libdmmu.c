@@ -257,9 +257,33 @@ static int dmmu_make_present(unsigned long addr,unsigned long end)
 	vm_page_prot = pgprot_val(vma->vm_page_prot);
 	vma->vm_page_prot = __pgprot(vm_page_prot | _PAGE_VALID| _PAGE_ACCESSED | _PAGE_PRESENT);
 
+/*
+long get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+		    unsigned long start, unsigned long nr_pages,
+		    int write, int force, struct page **pages,
+		    struct vm_area_struct **vmas);
+
+long get_user_pages_remote(struct task_struct *tsk, struct mm_struct *mm,
+			    unsigned long start, unsigned long nr_pages,
+			    unsigned int gup_flags, struct page **pages,
+			    struct vm_area_struct **vmas, int *locked);
+*/
+
 	len = DIV_ROUND_UP(end, PAGE_SIZE) - addr/PAGE_SIZE;
-	ret = get_user_pages(current, current->mm, addr,
-			len, write, 0, NULL, NULL);
+
+	/* XXX OLD */
+	/*
+	ret = get_user_pages(current, current->mm,
+			addr, len,
+			write, 0, NULL,
+			NULL);
+	*/
+
+	ret = get_user_pages_remote(current, current->mm,
+			addr, len,
+			(write ? FOLL_WRITE : 0), NULL,
+			NULL, NULL);
+
 	vma->vm_page_prot = __pgprot(vm_page_prot);
 	if (ret < 0) {
 		printk("dmmu_make_present get_user_pages error(%d). addr=%lx len=%lx\n",0-ret,addr,end-addr);

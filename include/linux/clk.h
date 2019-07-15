@@ -453,6 +453,14 @@ void clk_rate_exclusive_put(struct clk *clk);
 int clk_enable(struct clk *clk);
 
 /**
+ * clk_is_enabled - indicate that whether the clock source is enabled.
+ * @clk: clock source
+ *
+ * Returns 1 if clock source is enabled, or 0 if disabled.
+ */
+int clk_is_enabled(struct clk *clk);
+
+/**
  * clk_bulk_enable - inform the system when the set of clks should be running.
  * @num_clks: the number of clk_bulk_data
  * @clks: the clk_bulk_data table of consumer

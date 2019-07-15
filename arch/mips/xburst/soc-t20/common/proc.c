@@ -1,3 +1,4 @@
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
 #include <linux/ioport.h>
@@ -9,6 +10,7 @@
 #include <linux/syscore_ops.h>
 #include <linux/platform_device.h>
 #include <linux/seq_file.h>
+#include <linux/sched/task.h>
 #include <asm/mmu_context.h>
 #include <jz_proc.h>
 
@@ -30,10 +32,8 @@ char g_buffer[256];
 
 static int watch_proc_show(struct seq_file *m, void *v)
 {
-	int len = 0;
-	len = seq_printf(m, "%s\n",g_buffer);
-
-	return len;
+	seq_printf(m, "%s\n",g_buffer);
+	return 0;
 }
 
 struct watch_struct
@@ -72,10 +72,12 @@ static int watch_write_proc(struct file *file, const char __user *buffer,
 	pid_t pid;
 	unsigned int hi;
 	unsigned int lo;
+	unsigned long len;
 	struct task_struct *child = NULL;
 	struct watch_struct watch;
 	struct mips3264_watch_reg_state *watches;
-	copy_from_user(g_buffer,buffer,count);
+	/* TODO should we check this? */
+	len = copy_from_user(g_buffer,buffer,count);
 	g_buffer[count] = 0;
 	printk("%s\n",g_buffer);
 	s1 = g_buffer;

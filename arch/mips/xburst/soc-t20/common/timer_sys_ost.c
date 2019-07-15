@@ -65,12 +65,12 @@ struct tmr_src {
 	struct clk *clk_gate;
 	unsigned int channel;
 };
-static cycle_t jz_get_cycles(struct clocksource *cs)
+static u64 jz_get_cycles(struct clocksource *cs)
 {
 	int i = 0xffffff;
 	union clycle_type
 	{
-		cycle_t cycle64;
+		u64 cycle64;
 		unsigned int cycle32[2];
 	} cycle;
 
@@ -129,10 +129,12 @@ static struct tmr_src tmr_src ={
 
 };
 
+/* XXX do we need this?
 unsigned long long sched_clock(void)
 {
-	return ((cycle_t)jz_get_cycles(0) * tmr_src.cs.mult) >> tmr_src.cs.shift;
+	return ((u64)jz_get_cycles(0) * tmr_src.cs.mult) >> tmr_src.cs.shift;
 }
+*/
 
 void __cpuinit jz_clocksource_init(void)
 {
@@ -141,7 +143,7 @@ void __cpuinit jz_clocksource_init(void)
 	tmr_src.cs.mult =
 	clocksource_hz2mult(clk_get_rate(ext_clk) / CLKSOURCE_DIV, tmr_src.cs.shift);
 	clk_put(ext_clk);
-	clocksource_register(&tmr_src.cs);
+	clocksource_register_hz(&tmr_src.cs, clk_get_rate(ext_clk));
 	tmr_src.clk_gate = clk_get(NULL,"sys_ost");
 	if(IS_ERR(tmr_src.clk_gate)) {
 		tmr_src.clk_gate = NULL;
@@ -159,7 +161,7 @@ void __cpuinit jz_clocksource_init(void)
 }
 
 struct jz_timerevent {
-	int curmode;
+	int is_oneshot_mode;
 	spinlock_t lock;
 	unsigned int rate;
 	struct clock_event_device clkevt;
@@ -204,37 +206,64 @@ static int jz_set_next_event(unsigned long evt,
 	return 0;
 }
 
-static void jz_set_mode(enum clock_event_mode mode,
-			struct clock_event_device *clkevt)
+static int jz_set_state_periodic(struct clock_event_device *clkevt)
 {
 	struct jz_timerevent *evt_dev = container_of(clkevt,struct jz_timerevent,clkevt);
 	unsigned long flags;
 	unsigned int latch = (evt_dev->rate + (HZ >> 1)) / HZ;
-	spin_lock_irqsave(&evt_dev->lock,flags);
-	switch (mode) {
-		case CLOCK_EVT_MODE_PERIODIC:
-			if(!clk_is_enabled(evt_dev->clk_gate))
-				clk_enable(evt_dev->clk_gate);
-			evt_dev->curmode = mode;
-			resettimer(latch - 1);
-			break;
-		case CLOCK_EVT_MODE_ONESHOT:
-			evt_dev->curmode = mode;
-			break;
-		case CLOCK_EVT_MODE_UNUSED:
-		case CLOCK_EVT_MODE_SHUTDOWN:
-			stoptimer();
-			if(evt_dev->clk_gate)
-				clk_disable(evt_dev->clk_gate);
-			break;
 
-		case CLOCK_EVT_MODE_RESUME:
-			if(evt_dev->clk_gate)
-				clk_enable(evt_dev->clk_gate);
-			restarttimer();
-			break;
-	}
+	spin_lock_irqsave(&evt_dev->lock,flags);
+
+	if(!clk_is_enabled(evt_dev->clk_gate))
+		clk_enable(evt_dev->clk_gate);
+	evt_dev->is_oneshot_mode = 0;
+	resettimer(latch - 1);
+
 	spin_unlock_irqrestore(&evt_dev->lock,flags);
+	return 0;
+}
+
+static int jz_set_state_oneshot(struct clock_event_device *clkevt)
+{
+	struct jz_timerevent *evt_dev = container_of(clkevt,struct jz_timerevent,clkevt);
+	unsigned long flags;
+
+	spin_lock_irqsave(&evt_dev->lock,flags);
+
+	evt_dev->is_oneshot_mode = 1;
+
+	spin_unlock_irqrestore(&evt_dev->lock,flags);
+	return 0;
+}
+
+static int jz_set_state_shutdown(struct clock_event_device *clkevt)
+{
+	struct jz_timerevent *evt_dev = container_of(clkevt,struct jz_timerevent,clkevt);
+	unsigned long flags;
+
+	spin_lock_irqsave(&evt_dev->lock,flags);
+
+	stoptimer();
+	if(evt_dev->clk_gate)
+		clk_disable(evt_dev->clk_gate);
+
+	spin_unlock_irqrestore(&evt_dev->lock,flags);
+	return 0;
+}
+
+static int jz_tick_resume(struct clock_event_device *clkevt)
+{
+	struct jz_timerevent *evt_dev = container_of(clkevt,struct jz_timerevent,clkevt);
+	unsigned long flags;
+
+	spin_lock_irqsave(&evt_dev->lock,flags);
+
+	if(evt_dev->clk_gate)
+		clk_enable(evt_dev->clk_gate);
+	restarttimer();
+
+	spin_unlock_irqrestore(&evt_dev->lock,flags);
+	return 0;
 }
 
 static irqreturn_t jz_timer_interrupt(int irq, void *dev_id)
@@ -243,7 +272,7 @@ static irqreturn_t jz_timer_interrupt(int irq, void *dev_id)
 	int ctrlbit = 1 << (CLKEVENT_CH);
 	if(ost_readl(OST_TFR) & ctrlbit) {
 		ost_writel(OST_TFR,(~ctrlbit));//Comparison not match
-		if(evt_dev->curmode == CLOCK_EVT_MODE_ONESHOT) {
+		if(evt_dev->is_oneshot_mode) {
 			stoptimer();
 		}
 		evt_dev->clkevt.event_handler(&evt_dev->clkevt);
@@ -273,7 +302,7 @@ static void jz_clockevent_init(struct jz_timerevent *evt_dev) {
 //	ost_writel(CH_TCSR(CLKEVENT_CH),CSRDIV(CLKEVENT_DIV) | CSR_EXT_EN);
 	evt_dev->evt_action.handler = jz_timer_interrupt;
 	evt_dev->evt_action.thread_fn = NULL;
-	evt_dev->evt_action.flags = IRQF_DISABLED | IRQF_TIMER;
+	evt_dev->evt_action.flags = IRQF_TIMER;
 	evt_dev->evt_action.name = "jz-timerost";
 	evt_dev->evt_action.dev_id = (void*)evt_dev;
 
@@ -287,7 +316,11 @@ static void jz_clockevent_init(struct jz_timerevent *evt_dev) {
 	cd->features = CLOCK_EVT_FEAT_ONESHOT | CLOCK_EVT_FEAT_PERIODIC;//???????????????????????????????
 	cd->shift = 10;
 	cd->rating = 400;
-	cd->set_mode = jz_set_mode;
+	cd->set_state_periodic = jz_set_state_periodic;
+	cd->set_state_oneshot = jz_set_state_oneshot;
+	cd->set_state_oneshot_stopped = jz_set_state_shutdown;
+	cd->set_state_shutdown = jz_set_state_shutdown;
+	cd->tick_resume = jz_tick_resume;
 	cd->set_next_event = jz_set_next_event;
 	cd->irq = IRQ_SYS_OST;
 	cd->cpumask = cpumask_of(0);//support cpu 0

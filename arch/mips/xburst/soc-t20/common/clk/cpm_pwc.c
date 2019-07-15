@@ -1,3 +1,4 @@
+#include <linux/module.h>
 #include <linux/spinlock.h>
 #include <linux/wakelock.h>
 #include <linux/io.h>
@@ -162,12 +163,16 @@ void __init init_pwc_clk(struct clk *clk)
 
 static int __init cpm_pwc_dev_init(void)
 {
-	int i;
+	/* int i; */
 	cpm_pwc_ctrl.is_suspend = 0;
 	wake_lock_init(&cpm_pwc_ctrl.pwc_wakelock,WAKE_LOCK_SUSPEND,"pwc wakelock");
+	/* XXX setup_timer() renamed to timer_setup() */
+	/* XXX Disabling because ARRAY_SIZE(cpm_pwc_srcs) is always 0 */
+	/*
 	for(i = 0;i < ARRAY_SIZE(cpm_pwc_srcs);i++) {
 		setup_timer(&cpm_pwc_srcs[i].timer,cpm_pwc_poweroff,(unsigned long)&cpm_pwc_srcs[i]);
 	}
+	*/
 	return 0;
 }
 

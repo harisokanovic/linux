@@ -3,6 +3,8 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
+#include <linux/module.h>
+#include <uapi/linux/sched/types.h>
 #include <linux/kernel.h>
 #include <linux/io.h>
 #include <linux/ioport.h>
@@ -206,13 +208,12 @@ arch_initcall(reset_init);
 static char *reset_command[] = {"wdt","hibernate","recovery"};
 static int reset_proc_show(struct seq_file *m, void *v)
 {
-	int len = 0;
 	int i;
 	for(i = 0;i < ARRAY_SIZE(reset_command);i++)
-		len += seq_printf(m,"%s\t",reset_command[i]);
-	len += seq_printf(m,"\n");
+		seq_printf(m,"%s\t",reset_command[i]);
+	seq_printf(m,"\n");
 
-	return len;
+	return 0;
 }
 
 static int reset_proc_open(struct inode *inode, struct file *file)
@@ -277,11 +278,9 @@ static int reset_task(void *data) {
 
 static int wdt_control_proc_show(struct seq_file *m, void *v)
 {
-	int len = 0;
 	struct wdt_reset *wdt = m->private;
-	len += seq_printf(m,wdt->stop?">off<on\n":"off>on<\n");
-	return len;
-return 0;
+	seq_printf(m,wdt->stop?">off<on\n":"off>on<\n");
+	return 0;
 }
 
 static int wdt_control_proc_open(struct inode *inode, struct file *file)
@@ -303,10 +302,9 @@ static int wdt_control_write_proc(struct file *file, const char __user *buffer,
 }
 static int wdt_time_proc_show(struct seq_file *m, void *v)
 {
-	int len = 0;
 	struct wdt_reset *wdt = m->private;
-	len += seq_printf(m,"%d msecs\n",wdt->msecs);
-	return len;
+	seq_printf(m,"%d msecs\n",wdt->msecs);
+	return 0;
 }
 
 static int wdt_time_proc_open(struct inode *inode, struct file *file)

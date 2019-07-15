@@ -30,60 +30,59 @@
  *  unit: kHz
  */
 static struct timer_list timer;
-static void timercount1(unsigned long data);
-static void timercount2(unsigned long data);
-static void timercount3(unsigned long data);
+static void timercount1(struct timer_list*);
+static void timercount2(struct timer_list*);
+static void timercount3(struct timer_list*);
 static int  timer_flag = 0;
 
 static int dump_out_ddr(struct seq_file *m, void *v)
 {
-	int len = 0;
 	int i = 0;
-	len += seq_printf(m ,"--------------------dump the DDRC1---------------\n");
+	seq_printf(m ,"--------------------dump the DDRC1---------------\n");
 
-	len += seq_printf(m ,"DDRC_STATUS\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_STATUS),DDRC_BASE + DDRC_STATUS);
-	len += seq_printf(m ,"DDRC_CFG\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_CFG),DDRC_BASE + DDRC_CFG);
-	len += seq_printf(m ,"DDRC_CTRL\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_CTRL),DDRC_BASE + DDRC_CTRL);
-	len += seq_printf(m ,"DDRC_LMR\t:0x%08x\taddress\t:0x%08x\n",ddr_readl(DDRC_LMR),DDRC_BASE + DDRC_LMR);
-	len += seq_printf(m ,"DDRC_TIMING1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(1)),DDRC_BASE + DDRC_TIMING(1));
-	len += seq_printf(m ,"DDRC_TIMING2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(2)),DDRC_BASE + DDRC_TIMING(2));
-	len += seq_printf(m ,"DDRC_TIMING3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(3)),DDRC_BASE + DDRC_TIMING(3));
-	len += seq_printf(m ,"DDRC_TIMING4\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(4)),DDRC_BASE + DDRC_TIMING(4));
-	len += seq_printf(m ,"DDRC_TIMING5\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(5)),DDRC_BASE + DDRC_TIMING(5));
-	len += seq_printf(m ,"DDRC_TIMING6\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(6)),DDRC_BASE + DDRC_TIMING(6));
-	len += seq_printf(m ,"DDRC_REFCNT\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REFCNT),DDRC_BASE + DDRC_REFCNT);
-	len += seq_printf(m ,"DDRC_MMAP0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_MMAP0),DDRC_BASE + DDRC_MMAP0);
-	len += seq_printf(m ,"DDRC_MMAP1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_MMAP1),DDRC_BASE + DDRC_MMAP1);
-	len += seq_printf(m ,"DDRC_REMAP1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(1)),DDRC_BASE + DDRC_REMAP(1));
-	len += seq_printf(m ,"DDRC_REMAP2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(2)),DDRC_BASE + DDRC_REMAP(2));
-	len += seq_printf(m ,"DDRC_REMAP3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(3)),DDRC_BASE + DDRC_REMAP(3));
-	len += seq_printf(m ,"DDRC_REMAP4\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(4)),DDRC_BASE + DDRC_REMAP(4));
-	len += seq_printf(m ,"DDRC_REMAP5\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(5)),DDRC_BASE + DDRC_REMAP(5));
-	len += seq_printf(m ,"DDRC_AUTOSR_EN\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_AUTOSR_EN),DDRC_BASE + DDRC_AUTOSR_EN);
+	seq_printf(m ,"DDRC_STATUS\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_STATUS),DDRC_BASE + DDRC_STATUS);
+	seq_printf(m ,"DDRC_CFG\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_CFG),DDRC_BASE + DDRC_CFG);
+	seq_printf(m ,"DDRC_CTRL\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_CTRL),DDRC_BASE + DDRC_CTRL);
+	seq_printf(m ,"DDRC_LMR\t:0x%08x\taddress\t:0x%08x\n",ddr_readl(DDRC_LMR),DDRC_BASE + DDRC_LMR);
+	seq_printf(m ,"DDRC_TIMING1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(1)),DDRC_BASE + DDRC_TIMING(1));
+	seq_printf(m ,"DDRC_TIMING2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(2)),DDRC_BASE + DDRC_TIMING(2));
+	seq_printf(m ,"DDRC_TIMING3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(3)),DDRC_BASE + DDRC_TIMING(3));
+	seq_printf(m ,"DDRC_TIMING4\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(4)),DDRC_BASE + DDRC_TIMING(4));
+	seq_printf(m ,"DDRC_TIMING5\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(5)),DDRC_BASE + DDRC_TIMING(5));
+	seq_printf(m ,"DDRC_TIMING6\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_TIMING(6)),DDRC_BASE + DDRC_TIMING(6));
+	seq_printf(m ,"DDRC_REFCNT\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REFCNT),DDRC_BASE + DDRC_REFCNT);
+	seq_printf(m ,"DDRC_MMAP0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_MMAP0),DDRC_BASE + DDRC_MMAP0);
+	seq_printf(m ,"DDRC_MMAP1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_MMAP1),DDRC_BASE + DDRC_MMAP1);
+	seq_printf(m ,"DDRC_REMAP1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(1)),DDRC_BASE + DDRC_REMAP(1));
+	seq_printf(m ,"DDRC_REMAP2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(2)),DDRC_BASE + DDRC_REMAP(2));
+	seq_printf(m ,"DDRC_REMAP3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(3)),DDRC_BASE + DDRC_REMAP(3));
+	seq_printf(m ,"DDRC_REMAP4\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(4)),DDRC_BASE + DDRC_REMAP(4));
+	seq_printf(m ,"DDRC_REMAP5\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_REMAP(5)),DDRC_BASE + DDRC_REMAP(5));
+	seq_printf(m ,"DDRC_AUTOSR_EN\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRC_AUTOSR_EN),DDRC_BASE + DDRC_AUTOSR_EN);
 
-	len += seq_printf(m ,"--------------------dump the DDRP---------------\n");
+	seq_printf(m ,"--------------------dump the DDRP---------------\n");
 
-	len += seq_printf(m ,"DDRP_PIR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PIR),DDRC_BASE + DDRP_PIR);
-	len += seq_printf(m ,"DDRP_PGCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PGCR),DDRC_BASE + DDRP_PGCR);
-	len += seq_printf(m ,"DDRP_PGSR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PGSR),DDRC_BASE + DDRP_PGSR);
-	len += seq_printf(m ,"DDRP_PTR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR0),DDRC_BASE + DDRP_PTR0);
-	len += seq_printf(m ,"DDRP_PTR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR1),DDRC_BASE + DDRP_PTR1);
-	len += seq_printf(m ,"DDRP_PTR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR2),DDRC_BASE + DDRP_PTR2);
-	len += seq_printf(m ,"DDRP_DSGCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DSGCR),DDRC_BASE + DDRP_DSGCR);
-	len += seq_printf(m ,"DDRP_DCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DCR),DDRC_BASE + DDRP_DCR);
-	len += seq_printf(m ,"DDRP_DTPR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR0),DDRC_BASE + DDRP_DTPR0);
-	len += seq_printf(m ,"DDRP_DTPR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR1),DDRC_BASE + DDRP_DTPR1);
-	len += seq_printf(m ,"DDRP_DTPR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR2),DDRC_BASE + DDRP_DTPR2);
-	len += seq_printf(m ,"DDRP_MR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR0),DDRC_BASE + DDRP_MR0);
-	len += seq_printf(m ,"DDRP_MR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR1),DDRC_BASE + DDRP_MR1);
-	len += seq_printf(m ,"DDRP_MR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR2),DDRC_BASE + DDRP_MR2);
-	len += seq_printf(m ,"DDRP_MR3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR3),DDRC_BASE + DDRP_MR3);
-	len += seq_printf(m ,"DDRP_ODTCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_ODTCR),DDRC_BASE + DDRP_ODTCR);
+	seq_printf(m ,"DDRP_PIR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PIR),DDRC_BASE + DDRP_PIR);
+	seq_printf(m ,"DDRP_PGCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PGCR),DDRC_BASE + DDRP_PGCR);
+	seq_printf(m ,"DDRP_PGSR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PGSR),DDRC_BASE + DDRP_PGSR);
+	seq_printf(m ,"DDRP_PTR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR0),DDRC_BASE + DDRP_PTR0);
+	seq_printf(m ,"DDRP_PTR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR1),DDRC_BASE + DDRP_PTR1);
+	seq_printf(m ,"DDRP_PTR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_PTR2),DDRC_BASE + DDRP_PTR2);
+	seq_printf(m ,"DDRP_DSGCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DSGCR),DDRC_BASE + DDRP_DSGCR);
+	seq_printf(m ,"DDRP_DCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DCR),DDRC_BASE + DDRP_DCR);
+	seq_printf(m ,"DDRP_DTPR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR0),DDRC_BASE + DDRP_DTPR0);
+	seq_printf(m ,"DDRP_DTPR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR1),DDRC_BASE + DDRP_DTPR1);
+	seq_printf(m ,"DDRP_DTPR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_DTPR2),DDRC_BASE + DDRP_DTPR2);
+	seq_printf(m ,"DDRP_MR0\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR0),DDRC_BASE + DDRP_MR0);
+	seq_printf(m ,"DDRP_MR1\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR1),DDRC_BASE + DDRP_MR1);
+	seq_printf(m ,"DDRP_MR2\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR2),DDRC_BASE + DDRP_MR2);
+	seq_printf(m ,"DDRP_MR3\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_MR3),DDRC_BASE + DDRP_MR3);
+	seq_printf(m ,"DDRP_ODTCR\t:0x%08x\taddress\t:0x%08x\n", ddr_readl(DDRP_ODTCR),DDRC_BASE + DDRP_ODTCR);
 	for(i=0;i<4;i++) {
-		len += seq_printf(m ,"DX%dGSR0 \t:0x%08x\taddress\t:0x%08x\n", i, ddr_readl(DDRP_DXGSR0(i)),DDRC_BASE + DDRP_DXGSR0(i));
-		len += seq_printf(m ,"@pas:DXDQSTR(%d)\t:0x%08x\taddress\t:0x%08x\n", i,ddr_readl(DDRP_DXDQSTR(i)),DDRC_BASE + DDRP_DXDQSTR(i));
+		seq_printf(m ,"DX%dGSR0 \t:0x%08x\taddress\t:0x%08x\n", i, ddr_readl(DDRP_DXGSR0(i)),DDRC_BASE + DDRP_DXGSR0(i));
+		seq_printf(m ,"@pas:DXDQSTR(%d)\t:0x%08x\taddress\t:0x%08x\n", i,ddr_readl(DDRP_DXDQSTR(i)),DDRC_BASE + DDRP_DXDQSTR(i));
 	}
-	return len;
+	return 0;
 }
 
 static int ddr_mon1_proc_read(struct seq_file *m, void *v)
@@ -116,13 +115,13 @@ static int ddr_mon1_proc_write(struct file *file, const char __user *buffer,
 		*((volatile unsigned int *)0xb34f030c) = (0x10000000 | 0x3ff);
 		msleep(1000);
 
-		setup_timer(&timer, timercount1, (unsigned long)NULL);
+		timer_setup(&timer, timercount1, 0);
 		mod_timer(&timer, jiffies+10);
 	}
 	return count;
 }
 
-static void timercount1(unsigned long data)
+static void timercount1(struct timer_list *unused)
 {
 	unsigned int i = 0;
 
@@ -130,7 +129,7 @@ static void timercount1(unsigned long data)
 	i = *((volatile unsigned int *)0xb34f0310);
 	printk(KERN_DEBUG "total_cycles = %d,valid_cycles = %d\n", 1023, i);
 	printk(KERN_DEBUG "rate = %%%d\n",i * 100 / 1023);
-	mod_timer(&timer,jiffies + msecs_to_jiffies(1000));
+	mod_timer(&timer, jiffies + msecs_to_jiffies(1000));
 }
 
 static int ddr_mon2_proc_read(struct seq_file *m, void *v)
@@ -167,14 +166,14 @@ static int ddr_mon2_proc_write(struct file *file, const char __user *buffer,
 	}
 	if(i == 1){
 		printk("***********DDR Monitor2 START **************\n");
-		setup_timer(&timer, timercount2, (unsigned long)NULL);
+		timer_setup(&timer, timercount2, 0);
 		mod_timer(&timer, jiffies+10);
 	}
 
 	return count;
 }
 
-static void timercount2(unsigned long data)
+static void timercount2(struct timer_list *unused)
 {
 	unsigned int i,j,k;
 	i = 0;
@@ -262,14 +261,14 @@ static int ddr_mon3_proc_write(struct file *file, const char __user *buffer,
 	}
 	if(i == 1){
 		printk("***********DDR Monitor3 START **************\n");
-		setup_timer(&timer, timercount3, (unsigned long)NULL);
+		timer_setup(&timer, timercount3, 0);
 		mod_timer(&timer, jiffies+10);
 	}
 
 	return count;
 }
 
-static void timercount3(unsigned long data)
+static void timercount3(struct timer_list *unused)
 {
 	unsigned int i,j,k,l;
 	i = 0;
