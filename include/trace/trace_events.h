@@ -19,6 +19,11 @@
 
 #include <linux/trace_events.h>
 
+
+/* XXX */
+#undef CONFIG_PERF_EVENTS
+
+
 #ifndef TRACE_SYSTEM_VAR
 #define TRACE_SYSTEM_VAR TRACE_SYSTEM
 #endif

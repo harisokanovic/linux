@@ -2,6 +2,17 @@
 #ifndef _LINUX_TRACEPOINT_H
 #define _LINUX_TRACEPOINT_H
 
+
+/* XXX */
+//#undef CREATE_TRACE_POINTS
+//#undef CONFIG_TRACING
+
+
+/* XXX */
+#undef CONFIG_TRACEPOINTS
+#define NOTRACE
+
+
 /*
  * Kernel Tracepoint API.
  *
