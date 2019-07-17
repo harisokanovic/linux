@@ -361,16 +361,8 @@ static inline unsigned long _msecs_to_jiffies(const unsigned int m)
  * directly here and from __msecs_to_jiffies() in the case where
  * constant folding is not possible.
  */
-static __always_inline unsigned long msecs_to_jiffies(const unsigned int m)
-{
-	if (__builtin_constant_p(m)) {
-		if ((int)m < 0)
-			return MAX_JIFFY_OFFSET;
-		return _msecs_to_jiffies(m);
-	} else {
-		return __msecs_to_jiffies(m);
-	}
-}
+/* XXX needed to non-inline functions for arch/mips/xburst/core/mxu-v2-ex.obj */
+extern unsigned long msecs_to_jiffies(const unsigned int m);
 
 extern unsigned long __usecs_to_jiffies(const unsigned int u);
 #if !(USEC_PER_SEC % HZ)

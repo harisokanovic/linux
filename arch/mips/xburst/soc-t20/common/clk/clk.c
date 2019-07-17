@@ -233,6 +233,13 @@ unsigned long clk_get_rate(struct clk *clk)
 }
 EXPORT_SYMBOL(clk_get_rate);
 
+long clk_round_rate(struct clk *clk, unsigned long rate)
+{
+	/* XXX STUB for v4l2, TODO may need to round to something */
+	return rate;
+}
+EXPORT_SYMBOL_GPL(clk_round_rate);
+
 void clk_put(struct clk *clk)
 {
 	struct clk *parent_clk;

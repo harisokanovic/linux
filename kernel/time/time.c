@@ -606,6 +606,19 @@ unsigned long __usecs_to_jiffies(const unsigned int u)
 }
 EXPORT_SYMBOL(__usecs_to_jiffies);
 
+/* XXX needed to non-inline functions for arch/mips/xburst/core/mxu-v2-ex.obj */
+unsigned long msecs_to_jiffies(const unsigned int m)
+{
+	if (__builtin_constant_p(m)) {
+		if ((int)m < 0)
+			return MAX_JIFFY_OFFSET;
+		return _msecs_to_jiffies(m);
+	} else {
+		return __msecs_to_jiffies(m);
+	}
+}
+EXPORT_SYMBOL(msecs_to_jiffies);
+
 /*
  * The TICK_NSEC - 1 rounds up the value to the next resolution.  Note
  * that a remainder subtract here would not do the right thing as the

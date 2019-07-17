@@ -42,8 +42,9 @@ extern void nlm_cop2_restore(struct nlm_cop2_state *);
 
 #elif defined(CONFIG_MACH_XBURST)
 
-extern void xburst_cop2_save(struct xburst_cop2_state *);
-extern void xburst_cop2_restore(struct xburst_cop2_state *);
+/* XXX TODO: Does xburst_cop2_save/restore take `xburst_cop2_state*` or `task_struct*` */
+extern void xburst_cop2_save(struct task_struct *);
+extern void xburst_cop2_restore(struct task_struct *);
 #define cop2_save(r)		xburst_cop2_save(r)
 #define cop2_restore(r)		xburst_cop2_restore(r)
 
