@@ -1623,8 +1623,15 @@ static void __queue_delayed_work(int cpu, struct workqueue_struct *wq,
 	struct timer_list *timer = &dwork->timer;
 	struct work_struct *work = &dwork->work;
 
+	//printk("XXX __queue_delayed_work(): cpu=%i, wq=%lx, dwork=%lx, delay=%lu \n",
+	//	cpu, (ulong)wq, (ulong)dwork, delay);
+
+	//printk("XXX __queue_delayed_work(): timer=%lx, timer->function=%lx \n",
+	//	(ulong)timer, (ulong)timer->function);
+
 	WARN_ON_ONCE(!wq);
-	WARN_ON_ONCE(timer->function != delayed_work_timer_fn);
+	WARN_ON_ONCE(timer->function != delayed_work_timer_fn ||
+		     timer->data != (unsigned long)dwork);
 	WARN_ON_ONCE(timer_pending(timer));
 	WARN_ON_ONCE(!list_empty(&work->entry));
 
@@ -5923,6 +5930,8 @@ int __init workqueue_init_early(void)
 	       !system_unbound_wq || !system_freezable_wq ||
 	       !system_power_efficient_wq ||
 	       !system_freezable_power_efficient_wq);
+
+	printk("XXX workqueue_init_early() finished\n");
 
 	return 0;
 }

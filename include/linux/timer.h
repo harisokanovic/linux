@@ -8,6 +8,7 @@
 #include <linux/debugobjects.h>
 #include <linux/stringify.h>
 
+/* XXX hacked up to work with arch/mips/xburst/core/mxu-v2-ex.obj */
 struct timer_list {
 	/*
 	 * All fields that change during normal runtime grouped to the
@@ -15,8 +16,21 @@ struct timer_list {
 	 */
 	struct hlist_node	entry;
 	unsigned long		expires;
+	struct tvec_base *base; /* XXX unused */
+
 	void			(*function)(struct timer_list *);
+	unsigned long data; /* XXX unused */
+
+	int slack; /* XXX unused */
+
 	u32			flags;
+
+/* XXX unused */
+#ifdef CONFIG_TIMER_STATS
+	int start_pid;
+	void *start_site;
+	char start_comm[16];
+#endif
 
 #ifdef CONFIG_LOCKDEP
 	struct lockdep_map	lockdep_map;

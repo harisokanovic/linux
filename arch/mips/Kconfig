@@ -898,6 +898,7 @@ config MACH_XBURST
 	select JZRISC_PEP
 	select JZ_CPU_SCACHE
 	select IRQ_MIPS_CPU
+	select MIPS_CPU_SCACHE
 
 config MIKROTIK_RB532
 	bool "Mikrotik RB532 boards"
