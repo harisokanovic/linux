@@ -233,4 +233,47 @@ config BCH_CONST_T
 	default 4
 endif
 
+config MTD_JZ_SFC_NORFLASH
+	bool "Support ingenic sfc-mtd"
+	help
+		nothing
+config SFC_DMA
+	bool "used dma"
+	depends on MTD_JZ_SFC_NORFLASH
+	help
+		used dma
+
+config SFC_SPEED
+    int "JZ SFC speed in MHZ"
+	range 10 200
+	default 50
+	depends on MTD_JZ_SFC_NORFLASH
+	help
+	    Select sfc speed.
+		Examples:
+			50 =>  50 MHZ
+
+if MTD_JZ_SFC_NORFLASH
+
+choice
+	prompt "sfc Mode"
+	help
+	  Select sfc Mode
+
+config SPI_STARDARD
+	bool "standard spi mode"
+	depends on MTD_JZ_SFC_NORFLASH
+	help
+	  Say Y here to enable spi STANDARD MODE
+
+config SPI_QUAD
+	bool "quad spi mode"
+	depends on MTD_JZ_SFC_NORFLASH
+	help
+	  Say Y Here to enable spi QUAD MODE
+endchoice
+
+endif
+
+
 endmenu
