@@ -1097,7 +1097,7 @@ static int jz_spi_norflash_match_device(struct jz_sfc *flash)
 	return 0;
 }
 
-static int __init jz_sfc_probe(struct platform_device *pdev)
+static int jz_sfc_probe(struct platform_device *pdev)
 {
 	struct jz_sfc *flash;
 /*	const char *jz_probe_types[] = {"cmdlinepart",NULL}; */
@@ -1266,7 +1266,7 @@ err_no_pdata:
 	return err;
 }
 
-static int __exit jz_sfc_remove(struct platform_device *pdev)
+static int jz_sfc_remove(struct platform_device *pdev)
 {
 	struct jz_sfc *flash = platform_get_drvdata(pdev);
 
@@ -1366,7 +1366,7 @@ module_exit(jz_sfc_exit);
 
 static struct platform_driver jz_sfcdrv = {
 	.probe    = jz_sfc_probe,
-	.remove   = __exit_p(jz_sfc_remove),
+	.remove   = jz_sfc_remove,
 	.suspend  = jz_sfc_suspend,
 	.resume   = jz_sfc_resume,
 	.driver = {
