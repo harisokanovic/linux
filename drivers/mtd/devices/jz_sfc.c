@@ -36,6 +36,8 @@
 
 #include "jz_sfc.h"
 
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("JZ SFC Driver");
 
 #define SWAP_BUF_SIZE (4 * 1024)
 //#define SFC_DEBUG
@@ -1333,6 +1335,8 @@ void jz_sfc_shutdown(struct platform_device *pdev)
 	return ;
 }
 
+
+/*
 static struct platform_driver jz_sfcdrv = {
 	.driver		= {
 		.name	= "jz-sfc",
@@ -1357,6 +1361,17 @@ static void __exit jz_sfc_exit(void)
 
 module_init(jz_sfc_init);
 module_exit(jz_sfc_exit);
+*/
 
-MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("JZ SFC Driver");
+
+static struct platform_driver jz_sfcdrv = {
+	.probe    = jz_sfc_probe,
+	.remove   = __exit_p(jz_sfc_remove),
+	.suspend  = jz_sfc_suspend,
+	.resume   = jz_sfc_resume,
+	.driver = {
+		.name = "jz-sfc",
+	},
+};
+
+module_platform_driver(jz_sfcdrv);
