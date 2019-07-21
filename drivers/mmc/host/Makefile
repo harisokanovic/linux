@@ -3,6 +3,15 @@
 # Makefile for MMC/SD host controller drivers
 #
 
+obj-$(CONFIG_JZMMC_V12)		+= jzmmc_v12.o
+obj-$(CONFIG_JZMMC_V11)		+= jzmmc_v11.o
+obj-$(CONFIG_MMC0_JZ4780)	+= jz4780_mmc.o
+obj-$(CONFIG_MMC1_JZ4780)	+= jz4780_mmc.o
+obj-$(CONFIG_MMC2_JZ4780)	+= jz4780_mmc.o
+
+# XXX
+CFLAGS_jzmmc_v12.o += -Wno-unused-result
+
 obj-$(CONFIG_MMC_ARMMMCI) += armmmci.o
 armmmci-y := mmci.o
 armmmci-$(CONFIG_MMC_QCOM_DML) += mmci_qcom_dml.o
