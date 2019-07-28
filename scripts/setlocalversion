@@ -9,6 +9,9 @@
 #
 #
 
+echo 1>&2 "XXX Disabled setlocalversion script"
+exit 0
+
 usage() {
 	echo "Usage: $0 [--save-scmversion] [srctree]" >&2
 	exit 1
