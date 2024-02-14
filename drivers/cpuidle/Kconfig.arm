@@ -14,6 +14,19 @@ config ARM_CPUIDLE
 	  initialized by calling the CPU operations init idle hook
 	  provided by architecture code.
 
+config ARM_POLL_CPUIDLE
+	bool "ARM64 CPU idle Driver with polling"
+	depends on ARM64
+	depends on ARM_ARCH_TIMER_EVTSTREAM
+	select CPU_IDLE_MULTIPLE_DRIVERS
+	help
+	  Select this to enable a polling cpuidle driver for ARM64:
+	  The first state polls TIF_NEED_RESCHED for best latency on short
+	  sleep intervals. The second state falls back to arch_cpu_idle() to
+	  wait for interrupt. This is can be helpful in workloads that
+	  frequently block/wake at short intervals or VMs where wakeup IPIs
+	  are more expensive.
+
 config ARM_PSCI_CPUIDLE
 	bool "PSCI CPU idle Driver"
 	depends on ARM_PSCI_FW
