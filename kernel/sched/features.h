@@ -37,8 +37,8 @@ SCHED_FEAT(CACHE_HOT_BUDDY, true)
  *
  * DELAY_ZERO clips the lag on dequeue (or wakeup) to 0.
  */
-SCHED_FEAT(DELAY_DEQUEUE, false)
-SCHED_FEAT(DELAY_ZERO, true)
+SCHED_FEAT(DELAY_DEQUEUE, true)
+SCHED_FEAT(DELAY_ZERO, false)
 
 /*
  * Allow wakeup-time preemption of the current task:
