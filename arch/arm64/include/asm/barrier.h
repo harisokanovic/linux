@@ -247,6 +247,9 @@ static inline u64 ___cond_timewait(u64 now, u64 prev, u64 end,
        if (now >= end)
                return 0;
 
+       if (slack == 0)
+               slack = max(remaining, SMP_TIMEWAIT_CHECK_US);
+
        /*
         * Use WFE if there's enough slack to get an event-stream wakeup even
         * if we don't come out of the WFE due to natural causes.
@@ -273,6 +276,16 @@ static inline u64 ___cond_timewait(u64 now, u64 prev, u64 end,
        return now;
 }
 
+/*
+ * Fine wait_policy: minimize the timeout delay while balancing against the
+ * time spent in the WFE wait state.
+ *
+ * The worst case timeout delay is ARCH_TIMER_EVT_STREAM_PERIOD_US/2, which
+ * would also be the worst case spin period.
+ */
+#define __smp_cond_timewait_fine(now, prev, end, spin, wait)           \
+       __smp_cond_timewait(now, prev, end, spin, wait,                 \
+                           0)
 /*
  * Coarse wait_policy: minimizes the duration spent spinning at the cost of
  * potentially spending the available slack in a WFE wait state.
