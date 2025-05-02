@@ -274,6 +274,64 @@ do {									\
 #endif
 
 /*
+ * Non-spin primitive that allows waiting for stores to an address,
+ * with support for a timeout. This works in conjunction with an
+ * architecturally defined wait_policy.
+ */
+#ifndef __smp_timewait_store
+#define __smp_timewait_store(ptr, val) do { } while (0)
+#endif
+
+#ifndef __smp_cond_load_relaxed_timewait
+#define __smp_cond_load_relaxed_timewait(ptr, cond_expr, wait_policy,  \
+                                        time_expr, time_end) ({        \
+       typeof(ptr) __PTR = (ptr);                                      \
+       __unqual_scalar_typeof(*ptr) VAL;                               \
+       u32 __n = 0, __spin = 0;                                        \
+       u64 __prev = 0, __end = (time_end);                             \
+       bool __wait = false;                                            \
+                                                                       \
+       for (;;) {                                                      \
+               VAL = READ_ONCE(*__PTR);                                \
+               if (cond_expr)                                          \
+                       break;                                          \
+               cpu_relax();                                            \
+               if (++__n < __spin)                                     \
+                       continue;                                       \
+               if (!(__prev = wait_policy((time_expr), __prev, __end,  \
+                                         &__spin, &__wait)))           \
+                       break;                                          \
+               if (__wait)                                             \
+                       __smp_timewait_store(__PTR, VAL);               \
+               __n = 0;                                                \
+       }                                                               \
+       (typeof(*ptr))VAL;                                              \
+})
+#endif
+
+/**
+ * smp_cond_load_relaxed_timewait() - (Spin) wait for cond with no ordering
+ * guarantees until a timeout expires.
+ * @ptr: pointer to the variable to wait on
+ * @cond: boolean expression to wait for
+ * @wait_policy: policy handler that adjusts the number of times we spin or
+ *  wait for cacheline to change (depends on architecture, not supported in
+ *  generic code.) before evaluating the time-expr.
+ * @time_expr: monotonic expression that evaluates to the current time
+ * @time_end: compared against time_expr
+ *
+ * Equivalent to using READ_ONCE() on the condition variable.
+ */
+#define smp_cond_load_relaxed_timewait(ptr, cond_expr, wait_policy,    \
+                                        time_expr, time_end) ({        \
+       __unqual_scalar_typeof(*ptr) _val;;                             \
+       _val = __smp_cond_load_relaxed_timewait(ptr, cond_expr,         \
+                                             wait_policy, time_expr,   \
+                                             time_end);                \
+       (typeof(*ptr))_val;                                             \
+})
+
+/*
  * pmem_wmb() ensures that all stores for which the modification
  * are written to persistent storage by preceding instructions have
  * updated persistent storage before any data  access or data transfer
