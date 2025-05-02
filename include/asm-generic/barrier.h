@@ -15,6 +15,7 @@
 
 #include <linux/compiler.h>
 #include <linux/kcsan-checks.h>
+#include <linux/minmax.h>
 #include <asm/rwonce.h>
 
 #ifndef nop
@@ -273,6 +274,64 @@ do {									\
 })
 #endif
 
+#ifndef SMP_TIMEWAIT_SPIN_BASE
+#define SMP_TIMEWAIT_SPIN_BASE         16
+#endif
+
+static inline u64 ___cond_spinwait(u64 now, u64 prev, u64 end,
+                                  u32 *spin, bool *wait, u64 slack)
+{
+       if (now >= end)
+               return 0;
+
+       *wait = false;
+
+       /*
+        * Scale the spin-count up or down so we evaluate the time-expr every
+        * slack unit of time or so.
+        */
+       if ((now - prev) < slack)
+               *spin <<= 1;
+       else
+               /*
+                * Ensure the spin-count is at least SMP_TIMEWAIT_SPIN_BASE
+                * when scaling down to guard against artificially low values
+                * due to interrupts etc. Clamping down also handles the case
+                * of the first iteration (*spin == 0).
+                */
+               *spin = max((*spin >> 1) + (*spin >> 2), SMP_TIMEWAIT_SPIN_BASE);
+
+       return now;
+}
+
+#ifndef SMP_TIMEWAIT_SLACK_FINE_US
+#define SMP_TIMEWAIT_SLACK_FINE_US     2UL
+#endif
+
+#ifndef SMP_TIMEWAIT_SLACK_COARSE_US
+#define SMP_TIMEWAIT_SLACK_COARSE_US   5UL
+#endif
+
+/*
+ * wait_policy: to minimize how often we do the (typically) expensive
+ * time-check, expect a slack duration which would vary based on
+ * architecture.
+ *
+ * For the generic variant, the fine and coarse variants have a slack
+ * duration of SMP_TIMEWAIT_SLACK_FINE_US and SMP_TIMEWAIT_SLACK_COARSE_US.
+ */
+#ifndef __smp_cond_timewait_fine
+#define __smp_cond_timewait_fine(now, prev, end, spin, wait)   \
+       ___cond_spinwait(now, prev, end, spin, wait,            \
+                           SMP_TIMEWAIT_SLACK_FINE_US)
+#endif
+
+#ifndef __smp_cond_timewait_coarse
+#define __smp_cond_timewait_coarse(now, prev, end, spin, wait) \
+       ___cond_spinwait(now, prev, end, spin, wait,            \
+                           SMP_TIMEWAIT_SLACK_COARSE_US)
+#endif
+
 /*
  * Non-spin primitive that allows waiting for stores to an address,
  * with support for a timeout. This works in conjunction with an
@@ -320,11 +379,18 @@ do {									\
  * @time_expr: monotonic expression that evaluates to the current time
  * @time_end: compared against time_expr
  *
+ * The default policies (__smp_cond_timewait_coarse, __smp_cond_timewait_fine)
+ * assume that time_expr and time_end evaluate to time in us (both with a user
+ * specified precision.)
+ * With a user specified policy, any units and precision can be used.
+ *
  * Equivalent to using READ_ONCE() on the condition variable.
  */
 #define smp_cond_load_relaxed_timewait(ptr, cond_expr, wait_policy,    \
                                         time_expr, time_end) ({        \
        __unqual_scalar_typeof(*ptr) _val;;                             \
+       BUILD_BUG_ON_MSG(!__same_type(typeof(time_expr), u64),          \
+                        "incompatible time units");                    \
        _val = __smp_cond_load_relaxed_timewait(ptr, cond_expr,         \
                                              wait_policy, time_expr,   \
                                              time_end);                \
