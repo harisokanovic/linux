@@ -216,6 +216,9 @@ do {									\
 	(typeof(*ptr))VAL;						\
 })
 
+#define __smp_timewait_store(ptr, val)         \
+               __cmpwait_relaxed(ptr, val)
+
 #include <asm-generic/barrier.h>
 
 #endif	/* __ASSEMBLY__ */
