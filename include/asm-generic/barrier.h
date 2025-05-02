@@ -397,6 +397,32 @@ static inline u64 ___cond_spinwait(u64 now, u64 prev, u64 end,
        (typeof(*ptr))_val;                                             \
 })
 
+/**
+ * smp_cond_load_acquire_timewait() - (Spin) wait for cond with ACQUIRE ordering
+ * until a timeout expires.
+ * @ptr: pointer to the variable to wait on
+ * @cond: boolean expression to wait for
+ * @wait_policy: policy handler that adjusts how much we spin before evaluating
+ *  the timeout, and if we drop into a wait for cacheline to change (depending
+ *  on architecture support.)
+ * @time_expr: monotonic expression that evaluates to the current time
+ * @time_end: compared against time_expr
+ *
+ * Equivalent to using smp_cond_load_acquire() on the condition variable with
+ * a timeout.
+ */
+#ifndef smp_cond_load_acquire_timewait
+#define smp_cond_load_acquire_timewait(ptr, cond_expr, wait_policy,    \
+                                      time_expr, time_end) ({          \
+       __unqual_scalar_typeof(*ptr) _val;                              \
+       _val = smp_cond_load_relaxed_timewait(ptr, cond_expr,           \
+                                             wait_policy, time_expr,   \
+                                             time_end);                \
+       /* Depends on the control dependency of the wait above. */      \
+       smp_acquire__after_ctrl_dep();                                  \
+       (typeof(*ptr))_val;                                             \
+})
+#endif
 /*
  * pmem_wmb() ensures that all stores for which the modification
  * are written to persistent storage by preceding instructions have
