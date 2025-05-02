@@ -10,6 +10,7 @@
 #ifndef __ASSEMBLY__
 
 #include <linux/kasan-checks.h>
+#include <linux/minmax.h>
 
 #include <asm/alternative-macros.h>
 
@@ -218,6 +219,71 @@ do {									\
 
 #define __smp_timewait_store(ptr, val)         \
                __cmpwait_relaxed(ptr, val)
+
+/*
+ * Redefine ARCH_TIMER_EVT_STREAM_PERIOD_US locally to avoid include hell.
+ */
+#define __ARCH_TIMER_EVT_STREAM_PERIOD_US 100UL
+extern bool arch_timer_evtstrm_available(void);
+
+/*
+ * For coarse grained waits, allow overshoot by the event-stream period.
+ * Defined without reference to ARCH_TIMER_EVT_STREAM_PERIOD_US to avoid
+ * include hell.
+ */
+#define        SMP_TIMEWAIT_SLACK_COARSE_US    __ARCH_TIMER_EVT_STREAM_PERIOD_US
+
+#define SMP_TIMEWAIT_SPIN_BASE         16
+#define SMP_TIMEWAIT_CHECK_US          2UL
+
+static inline u64 ___cond_timewait(u64 now, u64 prev, u64 end,
+                                     u32 *spin, bool *wait, u64 slack)
+{
+       bool wfet = alternative_has_cap_unlikely(ARM64_HAS_WFXT);
+       bool wfe, ev = arch_timer_evtstrm_available();
+       u64 evt_period = __ARCH_TIMER_EVT_STREAM_PERIOD_US;
+       u64 remaining = end - now;
+
+       if (now >= end)
+               return 0;
+
+       /*
+        * Use WFE if there's enough slack to get an event-stream wakeup even
+        * if we don't come out of the WFE due to natural causes.
+        */
+       wfe = ev && ((remaining + slack) > evt_period);
+
+       if (wfe || wfet) {
+               *wait = true;
+               *spin = 0;
+               return now;
+       }
+
+       /*
+        * Our wait period is shorter than our best granularity. Spin.
+        *
+        * A time-check is expensive but not too expensive. Scale the
+        * spin-count so we stay close to the fine-grained slack period.
+        */
+       *wait = false;
+       if ((now - prev) < SMP_TIMEWAIT_CHECK_US)
+               *spin <<= 1;
+       else
+               *spin = max((*spin >> 1) + (*spin >> 2), SMP_TIMEWAIT_SPIN_BASE);
+       return now;
+}
+
+/*
+ * Coarse wait_policy: minimizes the duration spent spinning at the cost of
+ * potentially spending the available slack in a WFE wait state.
+ *
+ * The resultant worst case timeout delay is SMP_TIMEWAIT_SLACK_COARSE_US
+ * (same as ARCH_TIMER_EVT_STREAM_PERIOD_US) and a spin period of no more
+ * than SMP_TIMEWAIT_CHECK_US.
+ */
+#define __smp_cond_timewait_coarse(now, prev, end, spin, wait)         \
+       ___cond_timewait(now, prev, end, spin, wait,                    \
+                           SMP_TIMEWAIT_SLACK_COARSE_US)
 
 #include <asm-generic/barrier.h>
 
