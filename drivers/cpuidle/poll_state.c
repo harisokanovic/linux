@@ -17,13 +17,13 @@ static int __cpuidle poll_idle(struct cpuidle_device *dev,
 	raw_local_irq_enable();
 	if (!current_set_polling_and_test()) {
                unsigned long flags;
-               u64 time_start = local_clock_noinstr();
-               u64 limit = cpuidle_poll_time(drv, dev);
+               const u64 time_start = local_clock_noinstr();
+               const u64 limit = cpuidle_poll_time(drv, dev);
+               const u64 deadline = time_start + limit;
 
                flags = smp_cond_load_relaxed_timewait(&current_thread_info()->flags,
                                                       VAL & _TIF_NEED_RESCHED,
-                                                      local_clock_noinstr(),
-                                                      time_start + limit);
+                                                      local_clock_noinstr() > deadline);
 
                dev->poll_time_limit = !(flags & _TIF_NEED_RESCHED);
 	}
