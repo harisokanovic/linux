@@ -22,6 +22,7 @@ static int __cpuidle poll_idle(struct cpuidle_device *dev,
 
                flags = smp_cond_load_relaxed_timewait(&current_thread_info()->flags,
                                                       VAL & _TIF_NEED_RESCHED,
+                                                      __smp_cond_timewait_coarse,
                                                       local_clock_noinstr(),
                                                       time_start + limit);
 
