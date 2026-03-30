@@ -81,6 +81,14 @@ config HALTPOLL_CPUIDLE
 	 before halting in the guest (more efficient than polling in the
 	 host via halt_poll_ns for some scenarios).
 
+config HARDPOLL_CPUIDLE
+	tristate "hardpoll cpuidle driver"
+	default n
+	help
+	 Enables the hardpoll cpuidle driver: A simple cpuidle driver that
+	 always polls for the next task, preventing CPUs from sleeping.
+	 For testing purposes only!
+
 endif
 
 config ARCH_NEEDS_CPU_IDLE_COUPLED
